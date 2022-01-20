@@ -28,7 +28,7 @@ function aggregateRainFall(parsedRows) {
     var rainfall = 0.0
     var previous_counter = -1
     var finalentry = {}
-    var firsttimestamp = -1
+    var lasttimestamp = -1
     if (parsedRows) {
         parsedRows.forEach(function (row) {
             const splits = row.split(',')
@@ -42,9 +42,9 @@ function aggregateRainFall(parsedRows) {
                     sensorname = field_value
                 } else if (field_name === 'unixtime') {
                     entry.timestamp = (field_value / 1000).toFixed();
-                    if (firsttimestamp === -1) {
-                        firsttimestamp = entry.timestamp
-                    }
+
+                    lasttimestamp = entry.timestamp
+
                 } else if (field_name === 'value') {
                     entry.value = field_value
                 }
@@ -69,6 +69,7 @@ function aggregateRainFall(parsedRows) {
     }
 
     finalentry.value = rainfall
+    finalentry.timestamp = lasttimestamp
     results['rainfall'] = finalentry;
 
     return results;
