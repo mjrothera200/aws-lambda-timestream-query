@@ -8,6 +8,72 @@ const SELECT_ALL_QUERY = "SELECT * FROM \"" + constants.DATABASE_NAME + "\".\"" 
 // Note names of fields - important for conversion routine
 const SELECT_LATEST_WEATHER = "SELECT measure_name, to_milliseconds(time) AS unixtime, measure_value::varchar as value FROM \"" + constants.DATABASE_NAME + "\".\"" + constants.WEATHER_DATA_TABLE_NAME + "\" WHERE time between ago(15m) and now() ORDER BY time DESC LIMIT 20"
 
+const SELECT_RAINFALL24 = "SELECT measure_name, to_milliseconds(time) AS unixtime, measure_value::varchar as value FROM \"" + constants.DATABASE_NAME + "\".\"" + constants.WEATHER_DATA_TABLE_NAME + "\" WHERE measure_name = 'rain' and time between ago(24h) and now() ORDER BY time ASC LIMIT 100"
+
+
+async function getRainFall24(queryClient) {
+    const queries = [SELECT_RAINFALL24];
+
+    var parsedRows = []
+    for (let i = 0; i < queries.length; i++) {
+        console.log(`Running query ${i + 1} : ${queries[i]}`);
+        parsedRows = await getAllRows(queryClient, queries[i], null);
+    }
+    const results = aggregateRainFall(parsedRows)
+    return results
+}
+
+function aggregateRainFall(parsedRows) {
+    var results = {}
+    var rainfall = 0.0
+    var previous_counter = -1
+    var finalentry = {}
+    var firsttimestamp = -1
+    if (parsedRows) {
+        parsedRows.forEach(function (row) {
+            const splits = row.split(',')
+            var sensorname = ""
+            var entry = {}
+            splits.forEach(function (field) {
+                const fieldSplit = field.split('=')
+                const field_name = fieldSplit[0].trim()
+                const field_value = fieldSplit[1].trim()
+                if (field_name === 'measure_name') {
+                    sensorname = field_value
+                } else if (field_name === 'unixtime') {
+                    entry.timestamp = (field_value / 1000).toFixed();
+                    if (firsttimestamp === -1) {
+                        firsttimestamp = entry.timestamp
+                    }
+                } else if (field_name === 'value') {
+                    entry.value = field_value
+                }
+
+            });
+            const counter = parseInt(entry.value)
+            if (counter > 0) {
+                // 
+                if (previous_counter > 0) {
+                    if (counter > previous_counter) {
+                        const difference = counter - previous_counter;
+                        rainfall = rainfall + (difference * .01)
+                    }
+                    previous_counter = counter;
+                } else {
+                    previous_counter = counter;
+                }
+            }
+
+        }
+        );
+    }
+
+    finalentry.value = rainfall
+    results['rainfall'] = finalentry;
+
+    return results;
+}
+
 async function getLatestWeather(queryClient) {
     const queries = [SELECT_LATEST_WEATHER];
 
@@ -152,4 +218,4 @@ function parseArray(arrayColumnInfo, arrayValues) {
     return `[${arrayOutput.join(", ")}]`
 }
 
-module.exports = { getLatestWeather, getAllRows };
+module.exports = { getLatestWeather, getRainFall24, getAllRows };

@@ -31,6 +31,10 @@ exports.handler = async (event, context, callback) => {
 
     var results = {}
     results = await timeseries.getLatestWeather(queryClient);
+    rainresults = await timeseries.getRainFall24(queryClient)
+    
+    // Add the rain results
+    results['rainfall'] = rainresults['rainfall']
 
     // testing for now
     let responseCode = 200;

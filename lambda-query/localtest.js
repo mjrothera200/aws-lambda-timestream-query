@@ -10,7 +10,11 @@ async function callServices() {
 
     var results = {}
     results = await timeseries.getLatestWeather(queryClient);
+    rainresults = await timeseries.getRainFall24(queryClient)
     
+    // Add the rain results
+    results['rainfall'] = rainresults['rainfall']
+
     console.log(results)
 
 }
