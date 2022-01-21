@@ -68,7 +68,7 @@ function aggregateRainFall(parsedRows) {
         );
     }
 
-    finalentry.value = rainfall
+    finalentry.value = rainfall.toFixed(2);
     finalentry.timestamp = lasttimestamp
     results['rainfall'] = finalentry;
 
