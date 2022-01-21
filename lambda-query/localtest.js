@@ -11,9 +11,13 @@ async function callServices() {
     var results = {}
     results = await timeseries.getLatestWeather(queryClient);
     rainresults = await timeseries.getRainFall24(queryClient)
-    
+    temploggerresults = await timeseries.getLatestTempLogger(queryClient)
     // Add the rain results
     results['rainfall'] = rainresults['rainfall']
+
+    // Add the temp logger results
+    results['watertemp'] = temploggerresults['tempf']
+    results['waterlight'] = temploggerresults['lumensft2']
 
     console.log(results)
 

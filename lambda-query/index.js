@@ -32,10 +32,14 @@ exports.handler = async (event, context, callback) => {
     var results = {}
     results = await timeseries.getLatestWeather(queryClient);
     rainresults = await timeseries.getRainFall24(queryClient)
-    
+    temploggerresults = await timeseries.getLatestTempLogger(queryClient)
+
     // Add the rain results
     results['rainfall'] = rainresults['rainfall']
-
+ // Add the temp logger results
+    results['watertemp'] = temploggerresults['tempf']
+    results['waterlight'] = temploggerresults['lumensft2']
+    
     // testing for now
     let responseCode = 200;
     responseBody = results

@@ -8,6 +8,9 @@ const SELECT_ALL_QUERY = "SELECT * FROM \"" + constants.DATABASE_NAME + "\".\"" 
 // Note names of fields - important for conversion routine
 const SELECT_LATEST_WEATHER = "SELECT measure_name, to_milliseconds(time) AS unixtime, measure_value::varchar as value FROM \"" + constants.DATABASE_NAME + "\".\"" + constants.WEATHER_DATA_TABLE_NAME + "\" WHERE time between ago(15m) and now() ORDER BY time DESC LIMIT 20"
 
+const SELECT_LATEST_TEMPLOGGER = "SELECT measure_name, to_milliseconds(time) AS unixtime, measure_value::double as value FROM \"" + constants.DATABASE_NAME + "\".\"" + constants.TEMP_LOGGER_TABLE_NAME + "\" ORDER BY time DESC LIMIT 2"
+
+
 const SELECT_RAINFALL24 = "SELECT measure_name, to_milliseconds(time) AS unixtime, measure_value::varchar as value FROM \"" + constants.DATABASE_NAME + "\".\"" + constants.WEATHER_DATA_TABLE_NAME + "\" WHERE measure_name = 'rain' and time between ago(24h) and now() ORDER BY time ASC LIMIT 100"
 
 
@@ -73,6 +76,18 @@ function aggregateRainFall(parsedRows) {
     results['rainfall'] = finalentry;
 
     return results;
+}
+
+async function getLatestTempLogger(queryClient) {
+    const queries = [SELECT_LATEST_TEMPLOGGER];
+
+    var parsedRows = []
+    for (let i = 0; i < queries.length; i++) {
+        console.log(`Running query ${i + 1} : ${queries[i]}`);
+        parsedRows = await getAllRows(queryClient, queries[i], null);
+    }
+    const results = convertRows(parsedRows)
+    return results
 }
 
 async function getLatestWeather(queryClient) {
@@ -219,4 +234,4 @@ function parseArray(arrayColumnInfo, arrayValues) {
     return `[${arrayOutput.join(", ")}]`
 }
 
-module.exports = { getLatestWeather, getRainFall24, getAllRows };
+module.exports = { getLatestWeather, getRainFall24, getLatestTempLogger, getAllRows };
