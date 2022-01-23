@@ -2,6 +2,33 @@ const constants = require('./constants');
 
 const HOSTNAME = "host1";
 
+const measure_metadata = {
+    watertemp: {
+        database: constants.DATABASE_NAME,
+        table: constants.TEMP_LOGGER_TABLE_NAME,
+        measure_name: "tempf",
+        measure_value: "measure_value::double"
+    },
+    temp: {
+        database: constants.DATABASE_NAME,
+        table: constants.WEATHER_DATA_TABLE_NAME,
+        measure_name: "temp",
+        measure_value: "measure_value::varchar"
+    },
+    wind: {
+        database: constants.DATABASE_NAME,
+        table: constants.WEATHER_DATA_TABLE_NAME,
+        measure_name: "wind",
+        measure_value: "measure_value::varchar"
+    },
+    waterlight: {
+        database: constants.DATABASE_NAME,
+        table: constants.TEMP_LOGGER_TABLE_NAME,
+        measure_name: "lumensft2",
+        measure_value: "measure_value::double"
+    },
+}
+
 // See records ingested into this table so far
 const SELECT_ALL_QUERY = "SELECT * FROM \"" + constants.DATABASE_NAME + "\".\"" + constants.TEMP_LOGGER_TABLE_NAME + "\"";
 
@@ -12,7 +39,16 @@ const SELECT_LATEST_TEMPLOGGER = "SELECT measure_name, to_milliseconds(time) AS 
 
 const SELECT_RAINFALL24 = "SELECT measure_name, to_milliseconds(time) AS unixtime, measure_value::varchar as value FROM \"" + constants.DATABASE_NAME + "\".\"" + constants.WEATHER_DATA_TABLE_NAME + "\" WHERE measure_name = 'rain' and time between ago(24h) and now() ORDER BY time ASC LIMIT 100"
 
+async function getMeasures() {
+
+    return Object.keys(measure_metadata)
+
+}
+
 async function getHistorical(queryClient, measure_name, timeframe) {
+
+    // get the actual details from the metadata
+    const measure = measure_metadata[measure_name]
 
     var timeclause = ""
     if (timeframe === "YTD") {
@@ -22,7 +58,7 @@ async function getHistorical(queryClient, measure_name, timeframe) {
     } else {
         timeclause = "DAY(time) = DAY(now())"
     }
-    const query = `SELECT to_milliseconds(time) AS x, measure_value::double as y FROM "${constants.DATABASE_NAME}"."${constants.TEMP_LOGGER_TABLE_NAME}" WHERE measure_name = '${measure_name}' and ${timeclause} ORDER BY time ASC`
+    const query = `SELECT to_milliseconds(time) AS x, ${measure.measure_value} as y FROM "${measure.database}"."${measure.table}" WHERE measure_name = '${measure.measure_name}' and ${timeclause} ORDER BY time ASC`
 
     const queries = [query];
 
@@ -295,4 +331,4 @@ function parseArray(arrayColumnInfo, arrayValues) {
     return `[${arrayOutput.join(", ")}]`
 }
 
-module.exports = { getHistorical, getLatestWeather, getRainFall24, getLatestTempLogger, getAllRows };
+module.exports = { getMeasures, getHistorical, getLatestWeather, getRainFall24, getLatestTempLogger, getAllRows };

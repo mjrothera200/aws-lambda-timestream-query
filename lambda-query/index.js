@@ -42,8 +42,11 @@ exports.handler = async (event, context, callback) => {
         results['watertemp'] = temploggerresults['tempf']
         results['waterlight'] = temploggerresults['lumensft2']
     } else if (event.path === '/historical') {
-        // TODO:  parse query parameters and map to call
-        results = await timeseries.getHistorical(queryClient, "tempf", "YTD")
+        const measure = event.queryStringParameters.measure
+        
+        results = await timeseries.getHistorical(queryClient, measure, "YTD")
+    } else if (event.path === '/measures') {
+        results = await timeseries.getMeasures()
     }
 
     // testing for now
