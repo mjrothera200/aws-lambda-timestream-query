@@ -54,9 +54,10 @@ async function getHistorical(queryClient, measure_name, timeframe) {
     if (timeframe === "YTD") {
         timeclause = "YEAR(time) = YEAR(now())"
     } else if (timeframe === "MTD") {
-        timeclause = "MONTH(time) = MONTH(now())"
+        timeclause = "MONTH(time) = MONTH(now()) and YEAR(time) = YEAR(now())"
     } else {
-        timeclause = "DAY(time) = DAY(now())"
+        // Assumed to be a specific month of the year
+        timeclause = `MONTH(time) = ${timeframe} and YEAR(time) = YEAR(now())`
     }
     const query = `SELECT to_milliseconds(time) AS x, ${measure.measure_value} as y FROM "${measure.database}"."${measure.table}" WHERE measure_name = '${measure.measure_name}' and ${timeclause} ORDER BY time ASC`
 
