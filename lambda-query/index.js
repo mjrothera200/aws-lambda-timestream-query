@@ -43,7 +43,7 @@ exports.handler = async (event, context, callback) => {
         results['waterlight'] = temploggerresults['lumensft2']
     } else if (event.path === '/historical') {
         const measure = event.queryStringParameters.measure
-        const measure = event.queryStringParameters.timeframe
+        const timeframe = event.queryStringParameters.timeframe
         
         results = await timeseries.getHistorical(queryClient, measure, timeframe)
     } else if (event.path === '/measures') {

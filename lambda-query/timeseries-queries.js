@@ -7,25 +7,33 @@ const measure_metadata = {
         database: constants.DATABASE_NAME,
         table: constants.TEMP_LOGGER_TABLE_NAME,
         measure_name: "tempf",
-        measure_value: "measure_value::double"
+        measure_value: "measure_value::double".length,
+        yunits: "º",
+        ytitle: "Water Temperature"
     },
     temp: {
         database: constants.DATABASE_NAME,
         table: constants.WEATHER_DATA_TABLE_NAME,
         measure_name: "temp",
-        measure_value: "measure_value::varchar"
+        measure_value: "measure_value::varchar",
+        yunits: "º",
+        ytitle: "Outside Temperature"
     },
     wind: {
         database: constants.DATABASE_NAME,
         table: constants.WEATHER_DATA_TABLE_NAME,
         measure_name: "wind",
-        measure_value: "measure_value::varchar"
+        measure_value: "measure_value::varchar",
+        yunits: "mph",
+        ytitle: "Wind Speed"
     },
     waterlight: {
         database: constants.DATABASE_NAME,
         table: constants.TEMP_LOGGER_TABLE_NAME,
         measure_name: "lumensft2",
-        measure_value: "measure_value::double"
+        measure_value: "measure_value::double",
+        yunits: "lumens ft2",
+        ytitle: "Water Light"
     },
 }
 
@@ -69,6 +77,7 @@ async function getHistorical(queryClient, measure_name, timeframe) {
         parsedRows = await getAllRows(queryClient, queries[i], null);
     }
     const results = convertHistoricalRows(parsedRows)
+    results["metadata"] = measure
     return results
 }
 
