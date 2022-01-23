@@ -8,6 +8,7 @@ async function callServices() {
 
     queryClient = new AWS.TimestreamQuery();
 
+    /*
     var results = {}
     results = await timeseries.getLatestWeather(queryClient);
     rainresults = await timeseries.getRainFall24(queryClient)
@@ -18,6 +19,11 @@ async function callServices() {
     // Add the temp logger results
     results['watertemp'] = temploggerresults['tempf']
     results['waterlight'] = temploggerresults['lumensft2']
+    */
+
+
+    var results = {}
+    results = await timeseries.getHistorical(queryClient, "tempf", "all")
 
     console.log(results)
 

@@ -10,8 +10,61 @@ const SELECT_LATEST_WEATHER = "SELECT measure_name, to_milliseconds(time) AS uni
 
 const SELECT_LATEST_TEMPLOGGER = "SELECT measure_name, to_milliseconds(time) AS unixtime, measure_value::double as value FROM \"" + constants.DATABASE_NAME + "\".\"" + constants.TEMP_LOGGER_TABLE_NAME + "\" ORDER BY time DESC LIMIT 2"
 
-
 const SELECT_RAINFALL24 = "SELECT measure_name, to_milliseconds(time) AS unixtime, measure_value::varchar as value FROM \"" + constants.DATABASE_NAME + "\".\"" + constants.WEATHER_DATA_TABLE_NAME + "\" WHERE measure_name = 'rain' and time between ago(24h) and now() ORDER BY time ASC LIMIT 100"
+
+async function getHistorical(queryClient, measure_name, timeframe) {
+
+    const query = `SELECT to_milliseconds(time) AS x, measure_value::double as y FROM "${constants.DATABASE_NAME}"."${constants.TEMP_LOGGER_TABLE_NAME}" WHERE measure_name = '${measure_name}' ORDER BY time ASC`
+
+    const queries = [query];
+
+    var parsedRows = []
+    for (let i = 0; i < queries.length; i++) {
+        console.log(`Running query ${i + 1} : ${queries[i]}`);
+        parsedRows = await getAllRows(queryClient, queries[i], null);
+    }
+    const results = convertHistoricalRows(parsedRows)
+    return results
+}
+
+function convertHistoricalRows(parsedRows) {
+    var results = {}
+    var dataset = []
+    var hints = []
+    var max = {x: 0, y: 99999}
+    var min = {x: 0, y: -99999}
+    if (parsedRows) {
+        parsedRows.forEach(function (row) {
+            const splits = row.split(',')
+            var entry = {}
+            var sensorname = ""
+            splits.forEach(function (field) {
+                const fieldSplit = field.split('=')
+                const field_name = fieldSplit[0].trim()
+                const field_value = fieldSplit[1].trim()
+                if (field_name === 'x') {
+                    entry.x = parseInt(field_value)
+                } else if (field_name === 'y') {
+                    entry.y = parseFloat(field_value)
+                    
+                }
+            });
+            if (entry.y < max.y) {
+                max = entry
+            }
+            if (entry.y > min.y) {
+                min = entry
+            }
+            dataset.push(entry);
+        }
+        );
+    }
+    hints.push({type: "max", max})
+    hints.push({type: "min", min})
+    results["dataset"] = dataset
+    results["hints"] = hints
+    return results;
+}
 
 
 async function getRainFall24(queryClient) {
@@ -234,4 +287,4 @@ function parseArray(arrayColumnInfo, arrayValues) {
     return `[${arrayOutput.join(", ")}]`
 }
 
-module.exports = { getLatestWeather, getRainFall24, getLatestTempLogger, getAllRows };
+module.exports = { getHistorical, getLatestWeather, getRainFall24, getLatestTempLogger, getAllRows };

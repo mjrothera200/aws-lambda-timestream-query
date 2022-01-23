@@ -30,41 +30,26 @@ exports.handler = async (event, context, callback) => {
     queryClient = new AWS.TimestreamQuery();
 
     var results = {}
-    results = await timeseries.getLatestWeather(queryClient);
-    rainresults = await timeseries.getRainFall24(queryClient)
-    temploggerresults = await timeseries.getLatestTempLogger(queryClient)
 
-    // Add the rain results
-    results['rainfall'] = rainresults['rainfall']
- // Add the temp logger results
-    results['watertemp'] = temploggerresults['tempf']
-    results['waterlight'] = temploggerresults['lumensft2']
-    
+    if (event.path === '/latest') {
+        results = await timeseries.getLatestWeather(queryClient);
+        rainresults = await timeseries.getRainFall24(queryClient)
+        temploggerresults = await timeseries.getLatestTempLogger(queryClient)
+
+        // Add the rain results
+        results['rainfall'] = rainresults['rainfall']
+        // Add the temp logger results
+        results['watertemp'] = temploggerresults['tempf']
+        results['waterlight'] = temploggerresults['lumensft2']
+    } else if (event.path === '/historical') {
+        // TODO:  parse query parameters and map to call
+        results = await timeseries.getHistorical(queryClient, "tempf", "all")
+    }
+
     // testing for now
     let responseCode = 200;
     responseBody = results
-    /*
-    responseBody = {
-        temp: {
-            value: 24.0,
-            timestamp: 1642429005
-        },
-        rh: {
-            value: 76,
-            timestamp: 1642429005
-        },
-        wind: {
-            value: 11.0,
-            timestamp: 1642429005
-        },
-        rain: {
-            value: 4.0,
-            timestamp: 1642429005
-        }
-
-    }
-    */
-
+    
     // The output from a Lambda proxy integration must be 
     // in the following JSON object. The 'headers' property 
     // is for custom response headers in addition to standard 
