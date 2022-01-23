@@ -14,7 +14,15 @@ const SELECT_RAINFALL24 = "SELECT measure_name, to_milliseconds(time) AS unixtim
 
 async function getHistorical(queryClient, measure_name, timeframe) {
 
-    const query = `SELECT to_milliseconds(time) AS x, measure_value::double as y FROM "${constants.DATABASE_NAME}"."${constants.TEMP_LOGGER_TABLE_NAME}" WHERE measure_name = '${measure_name}' ORDER BY time ASC`
+    var timeclause = ""
+    if (timeframe === "YTD") {
+        timeclause = "YEAR(time) = YEAR(now())"
+    } else if (timeframe === "MTD") {
+        timeclause = "MONTH(time) = MONTH(now())"
+    } else {
+        timeclause = "DAY(time) = DAY(now())"
+    }
+    const query = `SELECT to_milliseconds(time) AS x, measure_value::double as y FROM "${constants.DATABASE_NAME}"."${constants.TEMP_LOGGER_TABLE_NAME}" WHERE measure_name = '${measure_name}' and ${timeclause} ORDER BY time ASC`
 
     const queries = [query];
 

@@ -43,7 +43,7 @@ exports.handler = async (event, context, callback) => {
         results['waterlight'] = temploggerresults['lumensft2']
     } else if (event.path === '/historical') {
         // TODO:  parse query parameters and map to call
-        results = await timeseries.getHistorical(queryClient, "tempf", "all")
+        results = await timeseries.getHistorical(queryClient, "tempf", "YTD")
     }
 
     // testing for now

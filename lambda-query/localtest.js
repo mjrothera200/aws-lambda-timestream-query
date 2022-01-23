@@ -23,7 +23,7 @@ async function callServices() {
 
 
     var results = {}
-    results = await timeseries.getHistorical(queryClient, "tempf", "all")
+    results = await timeseries.getHistorical(queryClient, "tempf", "YTD")
 
     console.log(results)
 
