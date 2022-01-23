@@ -7,7 +7,7 @@ const measure_metadata = {
         database: constants.DATABASE_NAME,
         table: constants.TEMP_LOGGER_TABLE_NAME,
         measure_name: "tempf",
-        measure_value: "measure_value::double".length,
+        measure_value: "measure_value::double",
         yunits: "º",
         ytitle: "Water Temperature"
     },
@@ -57,6 +57,7 @@ async function getHistorical(queryClient, measure_name, timeframe) {
 
     // get the actual details from the metadata
     const measure = measure_metadata[measure_name]
+    console.log(measure)
 
     var timeclause = ""
     if (timeframe === "YTD") {
