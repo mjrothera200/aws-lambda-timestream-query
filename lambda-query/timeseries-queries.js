@@ -9,7 +9,9 @@ const measure_metadata = {
         measure_name: "tempf",
         measure_value: "measure_value::double",
         yunits: "º",
-        ytitle: "Water Temperature"
+        ytitle: "Water Temperature",
+        lowthreshold: 38,
+        highthreshold: 120
     },
     temp: {
         database: constants.DATABASE_NAME,
@@ -17,7 +19,9 @@ const measure_metadata = {
         measure_name: "temp",
         measure_value: "measure_value::varchar",
         yunits: "º",
-        ytitle: "Outside Temperature"
+        ytitle: "Outside Temperature",
+        lowthreshold: 38,
+        highthreshold: 120
     },
     wind: {
         database: constants.DATABASE_NAME,
@@ -25,7 +29,9 @@ const measure_metadata = {
         measure_name: "wind",
         measure_value: "measure_value::varchar",
         yunits: "mph",
-        ytitle: "Wind Speed"
+        ytitle: "Wind Speed",
+        lowthreshold: 0,
+        highthreshold: 50
     },
     waterlight: {
         database: constants.DATABASE_NAME,
@@ -33,7 +39,9 @@ const measure_metadata = {
         measure_name: "lumensft2",
         measure_value: "measure_value::double",
         yunits: "lumens ft2",
-        ytitle: "Water Light"
+        ytitle: "Water Light",
+        lowthreshold: 0,
+        highthreshold: 800
     },
 }
 
@@ -52,6 +60,153 @@ async function getMeasures() {
     return Object.keys(measure_metadata)
 
 }
+
+async function getHistoricalSummary(queryClient, measure_name, year) {
+
+    // get the actual details from the metadata
+    const measure = measure_metadata[measure_name]
+    console.log(measure)
+
+    var timeclause = "YEAR(time) = YEAR(now())"
+    
+    // // Model Summary Function
+    /*
+    SELECT MONTH(time) as x, avg(measure_value::double) as y, max(measure_value::double) as yHigh, min(measure_value::double) as yLow FROM "oyster-haven"."temp-logger" WHERE measure_name = 'tempf' and YEAR(time) = YEAR(now()) GROUP BY MONTH(time) order by MONTH(time) ASC
+    */
+
+    // Here is a model query to find the earliest and latest by month
+    /*
+    SELECT min(time) as earliest_time, max(time) as latest_time, max_by(measure_value::double, time) as yClose, min_by(measure_value::double, time) as yOpen FROM "oyster-haven"."temp-logger" where year(time) = year(now()) and measure_name = 'tempf' GROUP BY MONTH(time) order by MONTH(time) 
+       */
+
+    const ocquery = `SELECT to_milliseconds(min(time)) as earliest_time, to_milliseconds(max(time)) as latest_time, max_by(${measure.measure_value}, time) as yClose, min_by(${measure.measure_value}, time) as yOpen FROM "${measure.database}"."${measure.table}"  WHERE measure_name = '${measure.measure_name}' and ${timeclause} GROUP BY MONTH(time) order by MONTH(time)`
+    // Get the yOpen and yClose and merge into the result set
+    ocRows = await getAllRows(queryClient, ocquery, null);
+    ocresults = convertHistoricalOCRows(ocRows)
+
+
+    const query = `SELECT MONTH(time) AS x, avg(${measure.measure_value}) as y, max(${measure.measure_value}) as yHigh, min(${measure.measure_value}) as yLow FROM "${measure.database}"."${measure.table}" WHERE measure_name = '${measure.measure_name}' and ${timeclause} GROUP BY MONTH(time) ORDER BY MONTH(time) ASC`
+
+    const queries = [query];
+
+    var parsedRows = []
+    for (let i = 0; i < queries.length; i++) {
+        console.log(`Running query ${i + 1} : ${queries[i]}`);
+        parsedRows = await getAllRows(queryClient, queries[i], null);
+    }
+    const results = convertHistoricalSummaryRows(parsedRows, year, measure, ocresults)
+    results["metadata"] = measure
+
+    
+    return results
+}
+
+function convertHistoricalOCRows(parsedRows) {
+    var results = {}
+    var dataset = {}
+
+    if (parsedRows) {
+        parsedRows.forEach(function (row) {
+            const splits = row.split(',')
+            var entry = {}
+            var sensorname = ""
+            splits.forEach(function (field) {
+                const fieldSplit = field.split('=')
+                const field_name = fieldSplit[0].trim()
+                const field_value = fieldSplit[1].trim()
+                if (field_name === 'earliest_time') {
+                    entry.earliest_time = parseInt(field_value)
+                    // parse the date for the month
+                    let xdate = new Date(entry.earliest_time)
+                    entry.earliestmonth = xdate.getMonth() + 1
+                } else if (field_name === 'latest_time') {
+                    entry.latest_time = parseFloat(field_value)
+                    // parse the date for the month
+                    let xdate = new Date(entry.latest_time)
+                    entry.latestmonth = xdate.getMonth() + 1
+                } else if (field_name === 'yOpen') {
+                    entry.yOpen = parseFloat(field_value)
+                } else if (field_name === 'yClose') {
+                    entry.yClose = parseFloat(field_value)
+                }
+            });
+            dataset[entry.latestmonth] = entry
+        }
+        );
+    }
+    results["dataset"] = dataset
+    return results;
+}
+
+function convertHistoricalSummaryRows(parsedRows, year, measure, ocresults) {
+    var results = {}
+    var dataset = []
+    var hints = []
+    var max = { x: 0, y: 99999 }
+    var min = { x: 0, y: -99999 }
+    if (parsedRows) {
+        parsedRows.forEach(function (row) {
+            const splits = row.split(',')
+            var entry = {}
+            var sensorname = ""
+            splits.forEach(function (field) {
+                const fieldSplit = field.split('=')
+                const field_name = fieldSplit[0].trim()
+                const field_value = fieldSplit[1].trim()
+                if (field_name === 'x') {
+                    entry.month = parseInt(field_value)
+
+                    // Convert to a timestamp as this is a month #
+                    let xdate = new Date(year, entry.month - 1, 1)
+                    entry.x = xdate.getTime()
+
+                } else if (field_name === 'y') {
+                    entry.y = parseFloat(field_value).toFixed(2);
+                    // Add the threshold coloring
+                    if (entry.y < measure.lowthreshold) {
+                        entry.color = '#EF5D28'
+                    } else if (entry.y > measure.highthreshold) {
+                        entry.color = '#EF5D28'
+                    } else {
+                        // just right
+                        entry.color = '#12939A'
+                    }
+                    entry.opacity = 1
+
+                } else if (field_name === 'yHigh') {
+                    entry.yHigh = parseFloat(field_value).toFixed(2);
+                } else if (field_name === 'yLow') {
+                    entry.yLow = parseFloat(field_value).toFixed(2);
+                }
+            });
+            if (entry.y < max.y) {
+                max = entry
+            }
+            if (entry.y > min.y) {
+                min = entry
+            }
+
+            // Try to find the associated month
+            entry.yOpen = 0
+            entry.yClose = 0
+            if (ocresults.dataset[entry.month]) {
+                entry.yOpen = ocresults.dataset[entry.month].yOpen;
+                entry.earliest_time = ocresults.dataset[entry.month].earliest_time
+                entry.yClose = ocresults.dataset[entry.month].yClose;
+                entry.latest_time = ocresults.dataset[entry.month].latest_time
+            }
+
+            dataset.push(entry);
+        }
+        );
+    }
+    hints.push({ type: "max", max })
+    hints.push({ type: "min", min })
+    results["dataset"] = dataset
+    results["hints"] = hints
+    return results;
+}
+
 
 async function getHistorical(queryClient, measure_name, timeframe) {
 
@@ -86,8 +241,8 @@ function convertHistoricalRows(parsedRows) {
     var results = {}
     var dataset = []
     var hints = []
-    var max = {x: 0, y: 99999}
-    var min = {x: 0, y: -99999}
+    var max = { x: 0, y: 99999 }
+    var min = { x: 0, y: -99999 }
     if (parsedRows) {
         parsedRows.forEach(function (row) {
             const splits = row.split(',')
@@ -101,7 +256,7 @@ function convertHistoricalRows(parsedRows) {
                     entry.x = parseInt(field_value)
                 } else if (field_name === 'y') {
                     entry.y = parseFloat(field_value)
-                    
+
                 }
             });
             if (entry.y < max.y) {
@@ -114,12 +269,14 @@ function convertHistoricalRows(parsedRows) {
         }
         );
     }
-    hints.push({type: "max", max})
-    hints.push({type: "min", min})
+    hints.push({ type: "max", max })
+    hints.push({ type: "min", min })
     results["dataset"] = dataset
     results["hints"] = hints
     return results;
 }
+
+
 
 
 async function getRainFall24(queryClient) {
@@ -342,4 +499,4 @@ function parseArray(arrayColumnInfo, arrayValues) {
     return `[${arrayOutput.join(", ")}]`
 }
 
-module.exports = { getMeasures, getHistorical, getLatestWeather, getRainFall24, getLatestTempLogger, getAllRows };
+module.exports = { getMeasures, getHistorical, getHistoricalSummary, getLatestWeather, getRainFall24, getLatestTempLogger, getAllRows };
