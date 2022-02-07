@@ -48,8 +48,8 @@ exports.handler = async (event, context, callback) => {
         results = await timeseries.getHistorical(queryClient, measure, timeframe)
     } else if (event.path === '/summary') {
         const measure = event.queryStringParameters.measure
-        const timeframe = event.queryStringParameters.timeframe
-        results = await timeseries.getHistoricalSummary(queryClient, measure, timeframe)
+        const timeframe = event.queryStringParameters.year
+        results = await timeseries.getHistoricalSummary(queryClient, measure, year)
     } else if (event.path === '/measures') {
         results = await timeseries.getMeasures()
     }
