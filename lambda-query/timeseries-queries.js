@@ -85,7 +85,7 @@ async function getHistoricalSummary(queryClient, measure_name, year) {
     ocresults = convertHistoricalOCRows(ocRows)
 
 
-    const query = `SELECT MONTH(time) AS x, avg(${measure.measure_value}) as y, max(${measure.measure_value}) as yHigh, min(${measure.measure_value}) as yLow FROM "${measure.database}"."${measure.table}" WHERE measure_name = '${measure.measure_name}' and ${timeclause} GROUP BY MONTH(time) ORDER BY MONTH(time) ASC`
+    const query = `SELECT MONTH(time) AS x, avg(cast(${measure.measure_value} as DOUBLE)) as y, max(cast(${measure.measure_value} as DOUBLE)) as yHigh, min(cast(${measure.measure_value} as DOUBLE)) as yLow FROM "${measure.database}"."${measure.table}" WHERE measure_name = '${measure.measure_name}' and ${timeclause} GROUP BY MONTH(time) ORDER BY MONTH(time) ASC`
 
     const queries = [query];
 
