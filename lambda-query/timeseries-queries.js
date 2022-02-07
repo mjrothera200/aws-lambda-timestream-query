@@ -11,7 +11,9 @@ const measure_metadata = {
         yunits: "º",
         ytitle: "Water Temperature",
         lowthreshold: 38,
-        highthreshold: 120
+        highthreshold: 100,
+        ydomainlow: 0,
+        ydomainhigh: 120
     },
     temp: {
         database: constants.DATABASE_NAME,
@@ -21,7 +23,9 @@ const measure_metadata = {
         yunits: "º",
         ytitle: "Outside Temperature",
         lowthreshold: 38,
-        highthreshold: 120
+        highthreshold: 100,
+        ydomainlow: 0,
+        ydomainhigh: 120
     },
     wind: {
         database: constants.DATABASE_NAME,
@@ -31,7 +35,9 @@ const measure_metadata = {
         yunits: "mph",
         ytitle: "Wind Speed",
         lowthreshold: 0,
-        highthreshold: 50
+        highthreshold: 50,
+        ydomainlow: 0,
+        ydomainhigh: 90
     },
     waterlight: {
         database: constants.DATABASE_NAME,
@@ -41,7 +47,9 @@ const measure_metadata = {
         yunits: "lumens ft2",
         ytitle: "Water Light",
         lowthreshold: 0,
-        highthreshold: 800
+        highthreshold: 800,
+        ydomainlow: 0,
+        ydomainhigh: 1000
     },
 }
 
