@@ -8,22 +8,29 @@ async function callServices() {
 
     queryClient = new AWS.TimestreamQuery();
 
-    /*
+    
     var results = {}
+    /*
     results = await timeseries.getLatestWeather(queryClient);
     rainresults = await timeseries.getRainFall24(queryClient)
     temploggerresults = await timeseries.getLatestTempLogger(queryClient)
+    waterqualityresults = await timeseries.getLatestWaterQuality(queryClient)
     // Add the rain results
     results['rainfall'] = rainresults['rainfall']
 
     // Add the temp logger results
     results['watertemp'] = temploggerresults['tempf']
     results['waterlight'] = temploggerresults['lumensft2']
-    */
+    
+    // Add the water quality results
+    results['watertemprt'] = waterqualityresults['tempf']
+    results['salinity'] = waterqualityresults['salinity']
+    results['tds'] = waterqualityresults['tds']
+    results['ec'] = waterqualityresults['ec']
+*/
 
-
-    var results = {}
-    //results = await timeseries.getHistorical(queryClient, "watertemp", "1")
+    //var results = {}
+    //results = await timeseries.getHistorical(queryClient, "tds", "2")
 
     //results = await timeseries.getMeasures()
 

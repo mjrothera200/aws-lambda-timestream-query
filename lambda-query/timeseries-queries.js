@@ -51,6 +51,42 @@ const measure_metadata = {
         ydomainlow: 0,
         ydomainhigh: 1000
     },
+    watertemprt: {
+        database: constants.DATABASE_NAME,
+        table: constants.WATER_DATA_TABLE_NAME,
+        measure_name: "tempf",
+        measure_value: "measure_value::double",
+        yunits: "º",
+        ytitle: "Water Temperature (Real-Time)",
+        lowthreshold: 38,
+        highthreshold: 100,
+        ydomainlow: 0,
+        ydomainhigh: 120
+    },
+    tds: {
+        database: constants.DATABASE_NAME,
+        table: constants.WATER_DATA_TABLE_NAME,
+        measure_name: "tds",
+        measure_value: "measure_value::double",
+        yunits: "mg/L",
+        ytitle: "Total Dissolved Solids",
+        lowthreshold: 10000,
+        highthreshold: 40000,
+        ydomainlow: 1000,
+        ydomainhigh: 50000
+    },
+    salinity: {
+        database: constants.DATABASE_NAME,
+        table: constants.WATER_DATA_TABLE_NAME,
+        measure_name: "salinity",
+        measure_value: "measure_value::double",
+        yunits: "mg/L",
+        ytitle: "Salinity",
+        lowthreshold: 0,
+        highthreshold: 18000,
+        ydomainlow: 500,  // Brackish between 500 and 5000, sea water at 19,400
+        ydomainhigh: 20000
+    },
 }
 
 // See records ingested into this table so far
@@ -60,6 +96,8 @@ const SELECT_ALL_QUERY = "SELECT * FROM \"" + constants.DATABASE_NAME + "\".\"" 
 const SELECT_LATEST_WEATHER = "SELECT measure_name, to_milliseconds(time) AS unixtime, measure_value::varchar as value FROM \"" + constants.DATABASE_NAME + "\".\"" + constants.WEATHER_DATA_TABLE_NAME + "\" WHERE time between ago(15m) and now() ORDER BY time DESC LIMIT 20"
 
 const SELECT_LATEST_TEMPLOGGER = "SELECT measure_name, to_milliseconds(time) AS unixtime, measure_value::double as value FROM \"" + constants.DATABASE_NAME + "\".\"" + constants.TEMP_LOGGER_TABLE_NAME + "\" ORDER BY time DESC LIMIT 2"
+
+const SELECT_LATEST_WATERQUALITY = "SELECT measure_name, to_milliseconds(time) AS unixtime, measure_value::double as value FROM \"" + constants.DATABASE_NAME + "\".\"" + constants.WATER_DATA_TABLE_NAME + "\" ORDER BY time DESC LIMIT 4" // ec, salinity, tempf, tds
 
 const SELECT_RAINFALL24 = "SELECT measure_name, to_milliseconds(time) AS unixtime, measure_value::varchar as value FROM \"" + constants.DATABASE_NAME + "\".\"" + constants.WEATHER_DATA_TABLE_NAME + "\" WHERE measure_name = 'rain' and time between ago(24h) and now() ORDER BY time ASC LIMIT 100"
 
@@ -76,7 +114,7 @@ async function getHistoricalSummary(queryClient, measure_name, year) {
     console.log(measure)
 
     var timeclause = "YEAR(time) = YEAR(now())"
-    
+
     // // Model Summary Function
     /*
     SELECT MONTH(time) as x, avg(measure_value::double) as y, max(measure_value::double) as yHigh, min(measure_value::double) as yLow FROM "oyster-haven"."temp-logger" WHERE measure_name = 'tempf' and YEAR(time) = YEAR(now()) GROUP BY MONTH(time) order by MONTH(time) ASC
@@ -105,7 +143,7 @@ async function getHistoricalSummary(queryClient, measure_name, year) {
     const results = convertHistoricalSummaryRows(parsedRows, year, measure, ocresults)
     results["metadata"] = measure
 
-    
+
     return results
 }
 
@@ -149,9 +187,33 @@ function convertHistoricalOCRows(parsedRows) {
 function convertHistoricalSummaryRows(parsedRows, year, measure, ocresults) {
     var results = {}
     var dataset = []
+    var monthresults = {}
     var hints = []
     var max = { x: 0, y: 99999 }
     var min = { x: 0, y: -99999 }
+
+    // Fill each month with blank values
+    initmonth = 1
+    while (initmonth < 13) {
+        let xdate = new Date(year, initmonth - 1, 1)
+        let ydate = new Date(year, initmonth - 1, 28)
+        monthresults[initmonth] =
+        {
+            month: initmonth,
+            x: xdate.getTime(),
+            y: '0.0',
+            color: '#EF5D28',
+            opacity: 1,
+            yHigh: '0.0',
+            yLow: '0.0',
+            yOpen: 0,
+            yClose: 0,
+            earliest_time: xdate.getTime(),
+            latest_time: ydate.getTime()
+        }
+        initmonth++
+    }
+
     if (parsedRows) {
         parsedRows.forEach(function (row) {
             const splits = row.split(',')
@@ -204,10 +266,20 @@ function convertHistoricalSummaryRows(parsedRows, year, measure, ocresults) {
                 entry.latest_time = ocresults.dataset[entry.month].latest_time
             }
 
-            dataset.push(entry);
+            monthresults[entry.month] = entry
+            
         }
         );
     }
+
+    // Convert the results to an array
+    finalmonth = 1
+    while (finalmonth < 13) {
+        dataset.push(monthresults[finalmonth]);
+        finalmonth++;
+    }
+
+
     hints.push({ type: "max", max })
     hints.push({ type: "min", min })
     results["dataset"] = dataset
@@ -349,6 +421,18 @@ function aggregateRainFall(parsedRows) {
     results['rainfall'] = finalentry;
 
     return results;
+}
+
+async function getLatestWaterQuality(queryClient) {
+    const queries = [SELECT_LATEST_WATERQUALITY];
+
+    var parsedRows = []
+    for (let i = 0; i < queries.length; i++) {
+        console.log(`Running query ${i + 1} : ${queries[i]}`);
+        parsedRows = await getAllRows(queryClient, queries[i], null);
+    }
+    const results = convertRows(parsedRows)
+    return results
 }
 
 async function getLatestTempLogger(queryClient) {
@@ -507,4 +591,4 @@ function parseArray(arrayColumnInfo, arrayValues) {
     return `[${arrayOutput.join(", ")}]`
 }
 
-module.exports = { getMeasures, getHistorical, getHistoricalSummary, getLatestWeather, getRainFall24, getLatestTempLogger, getAllRows };
+module.exports = { getMeasures, getHistorical, getHistoricalSummary, getLatestWeather, getRainFall24, getLatestTempLogger, getLatestWaterQuality, getAllRows };
