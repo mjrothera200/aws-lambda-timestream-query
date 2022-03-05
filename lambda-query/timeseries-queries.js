@@ -97,7 +97,7 @@ const SELECT_LATEST_WEATHER = "SELECT measure_name, to_milliseconds(time) AS uni
 
 const SELECT_LATEST_TEMPLOGGER = "SELECT measure_name, to_milliseconds(time) AS unixtime, measure_value::double as value FROM \"" + constants.DATABASE_NAME + "\".\"" + constants.TEMP_LOGGER_TABLE_NAME + "\" ORDER BY time DESC LIMIT 2"
 
-const SELECT_LATEST_WATERQUALITY = "SELECT measure_name, to_milliseconds(time) AS unixtime, measure_value::double as value FROM \"" + constants.DATABASE_NAME + "\".\"" + constants.WATER_DATA_TABLE_NAME + "\" ORDER BY time DESC LIMIT 4" // ec, salinity, tempf, tds
+const SELECT_LATEST_WATERQUALITY = "SELECT measure_name, to_milliseconds(time) AS unixtime, measure_value::double as value FROM \"" + constants.DATABASE_NAME + "\".\"" + constants.WATER_DATA_TABLE_NAME + "\" ORDER BY time DESC LIMIT 5" // ec, salinity, tempf, tds, battery
 
 const SELECT_RAINFALL24 = "SELECT measure_name, to_milliseconds(time) AS unixtime, measure_value::varchar as value FROM \"" + constants.DATABASE_NAME + "\".\"" + constants.WEATHER_DATA_TABLE_NAME + "\" WHERE measure_name = 'rain' and time between ago(24h) and now() ORDER BY time ASC LIMIT 100"
 
