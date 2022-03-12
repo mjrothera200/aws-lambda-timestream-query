@@ -87,6 +87,18 @@ const measure_metadata = {
         ydomainlow: 500,  // Brackish between 500 and 5000, sea water at 19,400
         ydomainhigh: 20000
     },
+    ec: {
+        database: constants.DATABASE_NAME,
+        table: constants.WATER_DATA_TABLE_NAME,
+        measure_name: "ec",
+        measure_value: "measure_value::double",
+        yunits: "us/cm",
+        ytitle: "Conductivity",
+        lowthreshold: 0,
+        highthreshold: 18000,
+        ydomainlow: 500,  // Brackish between 500 and 5000, sea water at 19,400
+        ydomainhigh: 20000
+    },
 }
 
 // See records ingested into this table so far
@@ -475,7 +487,7 @@ function convertRows(parsedRows) {
                 } else if (field_name === 'unixtime') {
                     entry.timestamp = (field_value / 1000).toFixed();
                 } else if (field_name === 'value') {
-                    entry.value = field_value
+                    entry.value = parseFloat(field_value).toFixed(2)
                 }
             });
             results[sensorname] = entry;

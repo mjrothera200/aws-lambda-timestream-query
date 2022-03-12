@@ -10,6 +10,7 @@ async function callServices() {
 
     
     var results = {}
+
     /*
     results = await timeseries.getLatestWeather(queryClient);
     rainresults = await timeseries.getRainFall24(queryClient)
@@ -27,15 +28,15 @@ async function callServices() {
     results['salinity'] = waterqualityresults['salinity']
     results['tds'] = waterqualityresults['tds']
     results['ec'] = waterqualityresults['ec']
-*/
+ */
 
     //var results = {}
-    //results = await timeseries.getHistorical(queryClient, "tds", "2")
+    results = await timeseries.getHistorical(queryClient, "ec", "3")
 
     //results = await timeseries.getMeasures()
 
 
-    results = await timeseries.getHistoricalSummary(queryClient, "watertemp", 2022)
+    //results = await timeseries.getHistoricalSummary(queryClient, "watertemp", 2022)
 
 
     console.log(results)
