@@ -420,7 +420,8 @@ function convertEventRows(parsedRows) {
                 if (field_name === 'x') {
                     entry.x = parseInt(field_value)
                 } else if (field_name === 'y') {
-                    entry.y = parseFloat(field_value)
+                    entry.y = parseFloat(field_value) // y can be overridded for placement on chart
+                    entry.eventvalue = parseFloat(field_value)
                 } else if (field_name === 'eventType') {
                     entry.eventType = field_value
                 } else if (field_name === 'measure_name') {

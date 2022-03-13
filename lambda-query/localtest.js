@@ -34,6 +34,12 @@ async function callServices() {
     results = await timeseries.getHistorical(queryClient, "ec", "3")
     results_events = await timeseries.getEvents(queryClient, "ec", "3")
     results["events"] = results_events.dataset
+    // Fix the events data set to put the "max" on the y for each event to ensure
+    var i = 0
+    while (i < results["events"].length) {
+        results["events"][i].y = results["hints"][0].max.y
+        i = i + 1
+    }
 
     //results = await timeseries.getMeasures()
 
