@@ -368,6 +368,74 @@ function convertHistoricalRows(parsedRows) {
     return results;
 }
 
+async function getEvents(queryClient, measure_name, timeframe, eventType, eventClassification) {
+
+    // get the actual details from the metadata
+    const measure = measure_metadata[measure_name]
+    console.log(measure)
+
+    var timeclause = ""
+    if (timeframe === "YTD") {
+        timeclause = "YEAR(time) = YEAR(now())"
+    } else if (timeframe === "MTD") {
+        timeclause = "MONTH(time) = MONTH(now()) and YEAR(time) = YEAR(now())"
+    } else {
+        // Assumed to be a specific month of the year
+        timeclause = `MONTH(time) = ${timeframe} and YEAR(time) = YEAR(now())`
+    }
+    const query = `SELECT to_milliseconds(time) AS x, measure_value::double as y FROM "${measure.database}"."events" WHERE measure_name = '${measure_name}' and ${timeclause} and eventType = '${eventType}' and eventClassification = '${eventClassification}' ORDER BY time ASC`
+
+    const queries = [query];
+
+    var parsedRows = []
+    for (let i = 0; i < queries.length; i++) {
+        console.log(`Running query ${i + 1} : ${queries[i]}`);
+        parsedRows = await getAllRows(queryClient, queries[i], null);
+    }
+
+    const results = convertEventRows(parsedRows)
+    results["metadata"] = measure
+    return results
+}
+
+function convertEventRows(parsedRows) {
+    var results = {}
+    var dataset = []
+    var hints = []
+    var max = { x: 0, y: 99999 }
+    var min = { x: 0, y: -99999 }
+    if (parsedRows) {
+        parsedRows.forEach(function (row) {
+            const splits = row.split(',')
+            var entry = {}
+            var sensorname = ""
+            splits.forEach(function (field) {
+                const fieldSplit = field.split('=')
+                const field_name = fieldSplit[0].trim()
+                const field_value = fieldSplit[1].trim()
+                if (field_name === 'x') {
+                    entry.x = parseInt(field_value)
+                } else if (field_name === 'y') {
+                    entry.y = parseFloat(field_value)
+
+                }
+            });
+            if (entry.y < max.y) {
+                max = entry
+            }
+            if (entry.y > min.y) {
+                min = entry
+            }
+            dataset.push(entry);
+        }
+        );
+    }
+    hints.push({ type: "max", max })
+    hints.push({ type: "min", min })
+    results["dataset"] = dataset
+    results["hints"] = hints
+    return results;
+}
 
 
 
@@ -603,4 +671,4 @@ function parseArray(arrayColumnInfo, arrayValues) {
     return `[${arrayOutput.join(", ")}]`
 }
 
-module.exports = { getMeasures, getHistorical, getHistoricalSummary, getLatestWeather, getRainFall24, getLatestTempLogger, getLatestWaterQuality, getAllRows };
+module.exports = { getMeasures, getHistorical, getHistoricalSummary, getLatestWeather, getRainFall24, getLatestTempLogger, getLatestWaterQuality, getEvents, getAllRows };

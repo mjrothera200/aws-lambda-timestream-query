@@ -31,13 +31,14 @@ async function callServices() {
  */
 
     //var results = {}
-    results = await timeseries.getHistorical(queryClient, "ec", "3")
+    //results = await timeseries.getHistorical(queryClient, "ec", "3")
 
     //results = await timeseries.getMeasures()
 
 
     //results = await timeseries.getHistoricalSummary(queryClient, "watertemp", 2022)
 
+    results = await timeseries.getEvents(queryClient, "wind", "YTD", "threshold", "high")
 
     console.log(results)
 
