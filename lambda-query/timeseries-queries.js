@@ -333,8 +333,8 @@ function convertHistoricalRows(parsedRows) {
     var results = {}
     var dataset = []
     var hints = []
-    var max = { x: 0, y: 99999 }
-    var min = { x: 0, y: -99999 }
+    var max = { x: 0, y: -99999 }
+    var min = { x: 0, y: 99999 }
     if (parsedRows) {
         parsedRows.forEach(function (row) {
             const splits = row.split(',')
@@ -351,10 +351,10 @@ function convertHistoricalRows(parsedRows) {
 
                 }
             });
-            if (entry.y < max.y) {
+            if (entry.y > max.y) {
                 max = entry
             }
-            if (entry.y > min.y) {
+            if (entry.y < min.y) {
                 min = entry
             }
             dataset.push(entry);
