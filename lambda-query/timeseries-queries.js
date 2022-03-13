@@ -368,7 +368,7 @@ function convertHistoricalRows(parsedRows) {
     return results;
 }
 
-async function getEvents(queryClient, measure_name, timeframe, eventType, eventClassification) {
+async function getEvents(queryClient, measure_name, timeframe) {
 
     // get the actual details from the metadata
     const measure = measure_metadata[measure_name]
@@ -383,7 +383,15 @@ async function getEvents(queryClient, measure_name, timeframe, eventType, eventC
         // Assumed to be a specific month of the year
         timeclause = `MONTH(time) = ${timeframe} and YEAR(time) = YEAR(now())`
     }
-    const query = `SELECT to_milliseconds(time) AS x, measure_value::double as y FROM "${measure.database}"."events" WHERE measure_name = '${measure_name}' and ${timeclause} and eventType = '${eventType}' and eventClassification = '${eventClassification}' ORDER BY time ASC`
+
+    // Note the measure name passed is the one we DON'T want beacuse we want to pick any other relevant 
+    // events for use with corrleation.  In other words, if on the historical view we are looking at wind
+    // patterm, we should not be overlaying the wind events on top of it - we want all other events.
+
+    // NOTE:  Old query to only filter on specific events - we want all events
+    //const query = `SELECT to_milliseconds(time) AS x, measure_value::double as y, measure_name, eventType, eventClassification, eventParm1, eventParm2 FROM "${measure.database}"."events" WHERE measure_name != '${measure_name}' and ${timeclause} and eventType = '${eventType}' and eventClassification = '${eventClassification}' ORDER BY time ASC`
+
+    const query = `SELECT to_milliseconds(time) AS x, measure_value::double as y, measure_name, eventType, eventClassification, eventParm1, eventParm2 FROM "${measure.database}"."events" WHERE measure_name != '${measure_name}' and ${timeclause} ORDER BY time ASC`
 
     const queries = [query];
 
@@ -394,16 +402,12 @@ async function getEvents(queryClient, measure_name, timeframe, eventType, eventC
     }
 
     const results = convertEventRows(parsedRows)
-    results["metadata"] = measure
     return results
 }
 
 function convertEventRows(parsedRows) {
     var results = {}
     var dataset = []
-    var hints = []
-    var max = { x: 0, y: 99999 }
-    var min = { x: 0, y: -99999 }
     if (parsedRows) {
         parsedRows.forEach(function (row) {
             const splits = row.split(',')
@@ -417,23 +421,23 @@ function convertEventRows(parsedRows) {
                     entry.x = parseInt(field_value)
                 } else if (field_name === 'y') {
                     entry.y = parseFloat(field_value)
-
+                } else if (field_name === 'eventType') {
+                    entry.eventType = field_value
+                } else if (field_name === 'measure_name') {
+                    entry.measure_name = field_value
+                } else if (field_name === 'eventClassification') {
+                    entry.eventClassification = field_value
+                } else if (field_name === 'eventParm1') {
+                        entry.eventParm1 = parseFloat(field_value)
+                } else if (field_name === 'eventParm2') {
+                    entry.eventParm2 = parseFloat(field_value)
                 }
             });
-            if (entry.y < max.y) {
-                max = entry
-            }
-            if (entry.y > min.y) {
-                min = entry
-            }
             dataset.push(entry);
         }
         );
     }
-    hints.push({ type: "max", max })
-    hints.push({ type: "min", min })
     results["dataset"] = dataset
-    results["hints"] = hints
     return results;
 }
 

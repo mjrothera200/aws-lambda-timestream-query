@@ -50,8 +50,9 @@ exports.handler = async (event, context, callback) => {
     } else if (event.path === '/historical') {
         const measure = event.queryStringParameters.measure
         const timeframe = event.queryStringParameters.timeframe
-
         results = await timeseries.getHistorical(queryClient, measure, timeframe)
+        results_events = await timeseries.getEvents(queryClient, measure, timeframe)
+        results["events"] = results_events.dataset
     } else if (event.path === '/summary') {
         const measure = event.queryStringParameters.measure
         const year = event.queryStringParameters.year
