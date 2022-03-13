@@ -37,7 +37,19 @@ async function callServices() {
     // Fix the events data set to put the "max" on the y for each event to ensure
     var i = 0
     while (i < results["events"].length) {
-        results["events"][i].y = results["hints"][0].max.y
+
+        // Search for the nearest X in the overall data set, then take the "y" and apply an offset
+        var j = 0
+        var found_y = results["hints"][0].max.y // Default to the top if not found
+        while (j < results["dataset"].length) {
+            if (results["dataset"][j].x > results["events"][i].x) {
+                found_y = results["dataset"][j].y
+                break;
+            } 
+            j = j + 1
+        } 
+
+        results["events"][i].y = found_y
         i = i + 1
     }
 
